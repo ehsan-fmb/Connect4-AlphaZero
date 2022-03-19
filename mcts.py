@@ -96,8 +96,8 @@ class MCTS:
 
     def buffer(self,outcome):
         value_loss=0
-        counter=0
         policy_buffer=[]
+        counter=0
         if outcome=="draw":
             z=torch.tensor(0)
         else:
@@ -111,4 +111,4 @@ class MCTS:
             z=z*-1
             cur=cur.get_parent()
             counter+=1
-        return value_loss/counter,sum(policy_buffer)
+        return value_loss,sum(policy_buffer),counter
