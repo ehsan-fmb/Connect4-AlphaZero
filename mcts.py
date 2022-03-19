@@ -106,9 +106,6 @@ class MCTS:
         cur=self.__root.get_parent()
         while cur is not None:
             val,actions_probs=cur.get_inferences()
-            #if it is on CPU
-            #policy_buffer.append(-torch.dot(torch.log(actions_probs),cur.get_mcts_policy()))
-            #if it is on GPU
             policy_buffer.append(-torch.dot(torch.log(actions_probs).cuda(),cur.get_mcts_policy().cuda()))
             value_loss=torch.pow(z-val,2)+value_loss
             z=z*-1

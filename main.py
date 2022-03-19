@@ -73,14 +73,15 @@ def self_play(brain):
         turn = 1 - turn
 
 def plot_loss(value_loss,policy_loss):
-    plt.clf()
-    plt.plot(range(len(value_loss)), value_loss,label="value loss")
-    plt.plot(range(len(policy_loss)), policy_loss,label="policy loss")
-    plt.pause(0.001)
-    plt.legend()
+    fig, ax = plt.subplots()
+    ax.plot(range(len(value_loss)), value_loss,label="value loss")
+    ax.plot(range(len(policy_loss)), policy_loss,label="policy loss")
+    #plt.pause(0.001)
+    ax.legend()
     plt.title("loss per batch")
     plt.xlabel("batch")
     plt.ylabel("loss")
+    plt.savefig('/content/drive/MyDrive/Connect4_AlphaZero/loss')
 
 def update(brain,vloss,ploss):
     brain.optimizer.zero_grad()
@@ -102,13 +103,14 @@ def train():
         vl,pl=self_play(brain)
         value_loss=value_loss+vl
         policy_loss=policy_loss+pl
-        if counter%batch_size==0:
+        if counter%batch_size==0 and counter!=0 :
             policy_loss_pl.append(policy_loss.item()/batch_size)
             value_loss_pl.append(value_loss.item()/batch_size)
             plot_loss(value_loss_pl,policy_loss_pl)
             update(brain, value_loss, policy_loss)
             value_loss=0
             policy_loss=0
+            print(counter)
         counter+=1
     save_net(brain)
 
