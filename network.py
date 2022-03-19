@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from collections import OrderedDict
 
 class Network(nn.Module):
-    def __init__(self, input_shape,number_of_actions, n_hidden_layers=4, n_hidden_nodes=32,learning_rate=0.01, bias=False, device='cuda'):
+    def __init__(self, input_shape,number_of_actions, n_hidden_layers=3, n_hidden_nodes=64,n_last_nodes=32,learning_rate=0.001, bias=False, device='cuda'):
         super(Network, self).__init__()
         # get the inputs
         self.device = device
@@ -19,7 +19,7 @@ class Network(nn.Module):
         # define body of the network
         self.layers = OrderedDict()
         self.n_layers = 2 * self.n_hidden_layers
-        for i in range(self.n_layers + 1):
+        for i in range(self.n_layers):
             if i == 0 and self.n_hidden_layers != 0:
                 self.layers[str(i)] = nn.Linear(
                     self.n_inputs,
@@ -36,19 +36,19 @@ class Network(nn.Module):
         # define policy head
         self.policy = nn.Sequential(
             nn.Linear(self.n_hidden_nodes,
-                      self.n_hidden_nodes,
+                      n_last_nodes,
                       bias=self.bias),
             nn.ReLU(),
-            nn.Linear(self.n_hidden_nodes,
+            nn.Linear(n_last_nodes,
                       self.n_outputs,
                       bias=self.bias))
         # define value head
         self.value = nn.Sequential(
             nn.Linear(self.n_hidden_nodes,
-                      self.n_hidden_nodes,
+                      n_last_nodes,
                       bias=self.bias),
             nn.ReLU(),
-            nn.Linear(self.n_hidden_nodes,
+            nn.Linear(n_last_nodes,
                       1,
                       bias=self.bias))
         # other settings
@@ -59,6 +59,7 @@ class Network(nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(),
                                           lr=self.learning_rate,weight_decay=1e-5)
+
     # define functions to get outputs from network
     def predict(self, state):
         body_output = self.get_body_output(state)

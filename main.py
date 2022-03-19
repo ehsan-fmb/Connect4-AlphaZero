@@ -6,7 +6,7 @@ from state import detection_kernels
 from scipy.signal import convolve2d
 from network import Network
 import torch
-from torch.nn.functional import normalize
+
 
 # game logical variables:
 # First player: color=red, number on the borad=1, turn=0, type: search algorithm
