@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 class MCTS:
-    def __init__(self, root,num_sim,brain,exploration_weight=2):
+    def __init__(self, root,num_sim,brain,exploration_weight=1.25):
         self.__root = root
         self.__exploration_weight = exploration_weight
         self.__sim_budget=num_sim
@@ -104,6 +104,8 @@ class MCTS:
             z=torch.tensor(1)
 
         cur=self.__root.get_parent()
+        #bring all stuff in gpu
+        z=z.to("cuda")
         while cur is not None:
             val,actions_probs=cur.get_inferences()
             policy_buffer.append(-torch.dot(torch.log(actions_probs).cuda(),cur.get_mcts_policy().cuda()))
