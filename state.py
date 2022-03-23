@@ -5,6 +5,8 @@ from scipy.signal import convolve2d
 import torch
 
 
+device='cuda'
+
 # kernels
 horizontal_kernel = np.array([[ 1, 1, 1, 1]])
 vertical_kernel = np.transpose(horizontal_kernel)
@@ -13,9 +15,8 @@ diag2_kernel = np.fliplr(diag1_kernel)
 detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
 
 
-
 class State:
-    def __init__(self, parent,isroot,board,cp,prior_policy,mcts_probs=torch.zeros(7),arow=None,acul=None,Q=torch.tensor(0),N=torch.tensor(sys.float_info.epsilon)):
+    def __init__(self, parent,isroot,board,cp,prior_policy,mcts_probs=torch.zeros(7).to(device),arow=None,acul=None,Q=torch.tensor(0).to(device),N=torch.tensor(sys.float_info.epsilon).to(device)):
         self.__parent = parent
         if not isroot:
             self.__board=copy.deepcopy(parent.get_board())
@@ -31,6 +32,7 @@ class State:
         self.__action_policies=None
         self.__mcts_policy=mcts_probs
         self.__value=None
+
 
     def get_Q(self):
         return self.__Q

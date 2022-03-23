@@ -3,8 +3,10 @@ from state import State
 import numpy as np
 import torch
 
+device='cuda'
+
 class MCTS:
-    def __init__(self, root,num_sim,brain,exploration_weight=1.25):
+    def __init__(self, root,num_sim,brain,exploration_weight=torch.tensor(1.25).to(device)):
         self.__root = root
         self.__exploration_weight = exploration_weight
         self.__sim_budget=num_sim
@@ -87,28 +89,26 @@ class MCTS:
         if result != "is not terminal":
             return cur.get_inferences()[0]
         if result=="win":
-            return 1
+            return torch.tensor(1).to(device)
         elif result=="loss":
-            return -1
+            return torch.tensor(-1).to(device)
         else:
-            return 0
+            return torch.tensor(0).to(device)
 
 
     def buffer(self,outcome):
-        value_loss=0
+        value_loss=torch.tensor(0).to(device)
         policy_buffer=[]
-        counter=0
+        counter=torch.tensor(0).to(device)
         if outcome=="draw":
-            z=torch.tensor(0)
+            z=torch.tensor(0).to(device)
         else:
-            z=torch.tensor(1)
+            z=torch.tensor(1).to(device)
 
         cur=self.__root.get_parent()
-        #bring all stuff in gpu
-        z=z.to("cuda")
         while cur is not None:
             val,actions_probs=cur.get_inferences()
-            policy_buffer.append(-torch.dot(torch.log(actions_probs).cuda(),cur.get_mcts_policy().cuda()))
+            policy_buffer.append(-torch.dot(torch.log(actions_probs),cur.get_mcts_policy()))
             value_loss=torch.pow(z-val,2)+value_loss
             z=z*-1
             cur=cur.get_parent()

@@ -8,6 +8,8 @@ from network import Network
 import torch
 
 
+device='cuda'
+
 # game logical variables:
 # First player: color=red, number on the borad=1, turn=0, type: search algorithm
 # Second player: color=green, number on the borad=-1, turn=1, type: search algorithm
@@ -108,10 +110,10 @@ def train():
     counter = 0
     policy_loss_pl = []
     value_loss_pl = []
-    value_loss = 0
-    policy_loss = 0
-    batch_input_num=0
-    brain = Network(input_shape=ROW_COUNT * COLUMN_COUNT, number_of_actions=COLUMN_COUNT)
+    value_loss = torch.tensor(0).to(device)
+    policy_loss = torch.tensor(0).to(device)
+    batch_input_num=torch.tensor(0).to(device)
+    brain = Network(number_of_actions=COLUMN_COUNT)
     while counter < Num_Training_Games:
         vl, pl,game_input_num= self_play(brain)
 
@@ -130,9 +132,9 @@ def train():
 
             update(brain, value_loss, policy_loss)
 
-            value_loss = 0
-            policy_loss = 0
-            batch_input_num=0
+            value_loss = torch.tensor(0).to(device)
+            policy_loss = torch.tensor(0).to(device)
+            batch_input_num=torch.tensor(0).to(device)
             print(counter)
 
         counter += 1
