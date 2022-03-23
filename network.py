@@ -19,11 +19,11 @@ class Network(nn.Module):
             #first conv layer
             Conv2d(1, 32, kernel_size=4),
             BatchNorm2d(32),
-            ReLU(inplace=True),
+            ReLU(),
             # Second conv layer
             Conv2d(32, 64, kernel_size=2),
             BatchNorm2d(64),
-            ReLU(inplace=True),
+            ReLU(),
         )
         # define policy head
         self.policy = nn.Sequential(
@@ -55,7 +55,6 @@ class Network(nn.Module):
     # define functions to get outputs from network
     def predict(self, state):
         body_output = torch.flatten(self.get_body_output(state))
-        print(body_output.shape)
         probs = F.softmax(self.policy(body_output), dim=-1)
         return probs, self.value(body_output)
 

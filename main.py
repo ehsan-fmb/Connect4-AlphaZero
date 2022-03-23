@@ -17,8 +17,8 @@ ROW_COUNT = 6
 COLUMN_COUNT = 7
 FPLAYER_PIECE = 1
 SPLAYER_PIECE = -1
-Num_Sim_Per_Move = 200
-Num_Training_Games = 100000
+Num_Sim_Per_Move = 100
+Num_Training_Games = 5000
 batch_size = 10
 
 
@@ -103,7 +103,7 @@ def update(brain, vloss, ploss):
 
 
 def save_net(brain):
-    torch.save(brain.state_dict(), "brain.pt")
+    torch.save(brain.state_dict(), "/content/drive/MyDrive/Connect4_AlphaZero/brain.pt")
 
 
 def train():
