@@ -30,17 +30,18 @@ class MCTS:
         self.compute_mcts_policy()
         return self.__root.get_arow(),self.__root.get_acul()
 
-
     def compute_mcts_policy(self):
         children=self.__root.get_children()
         probs=[]
+        new_mcts=torch.zeros(7).to(device).detach()
         # the noise should be considered
         #noise=np.random.dirichlet(len(children))
         total=self.__root.get_N().item()-1
         for i in range(len(children)):
             prob=children[i].get_N().item()/total
-            self.__root.change_mcts_policy(children[i].get_acul(),prob)
+            new_mcts[children[i].get_acul()]=prob
             probs.append(prob)
+        self.__root.change_mcts_policy(new_mcts)
         self.__root= np.random.choice(children, p=probs)
 
     def backpropagation(self,cur,delta):
@@ -106,6 +107,7 @@ class MCTS:
             z=torch.tensor(1).to(device)
 
         cur=self.__root.get_parent()
+        z=z.detach()
         while cur is not None:
             val,actions_probs=cur.get_inferences()
             policy_buffer.append(-torch.dot(torch.log(actions_probs),cur.get_mcts_policy()))

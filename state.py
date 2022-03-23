@@ -16,7 +16,7 @@ detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_ker
 
 
 class State:
-    def __init__(self, parent,isroot,board,cp,prior_policy,mcts_probs=torch.zeros(7).to(device),arow=None,acul=None,Q=torch.tensor(0).to(device),N=torch.tensor(sys.float_info.epsilon).to(device)):
+    def __init__(self, parent,isroot,board,cp,prior_policy,arow=None,acul=None,Q=torch.tensor(0).to(device),N=torch.tensor(sys.float_info.epsilon).to(device)):
         self.__parent = parent
         if not isroot:
             self.__board=copy.deepcopy(parent.get_board())
@@ -30,7 +30,7 @@ class State:
         self.__acul=acul
         self.__ppolicy=prior_policy
         self.__action_policies=None
-        self.__mcts_policy=mcts_probs
+        self.__mcts_policy=None
         self.__value=None
 
 
@@ -44,8 +44,8 @@ class State:
         self.__N=count
     def get_children(self):
         return self.__children
-    def change_mcts_policy(self,action,prob):
-        self.__mcts_policy[action]=prob
+    def change_mcts_policy(self,probs):
+        self.__mcts_policy=probs
     def get_mcts_policy(self):
         return self.__mcts_policy
     def get_prior_policy(self):

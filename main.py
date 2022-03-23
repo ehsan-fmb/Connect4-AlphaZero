@@ -97,8 +97,8 @@ def plot_loss(value_loss, policy_loss):
 
 def update(brain, vloss, ploss):
     brain.optimizer.zero_grad()
-    ploss.backward(retain_graph=True)
-    vloss.backward()
+    total_loss=vloss+ploss
+    total_loss.backward()
     brain.optimizer.step()
 
 
