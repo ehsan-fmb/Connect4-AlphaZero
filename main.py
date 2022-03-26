@@ -78,6 +78,7 @@ def self_play(brain):
 
 
 def plot_loss(value_loss, policy_loss):
+    plt.clf()
     fig_v, ax_v = plt.subplots()
     ax_v.plot(range(len(value_loss)), value_loss, label="value loss")
     ax_v.legend()
@@ -85,6 +86,7 @@ def plot_loss(value_loss, policy_loss):
     plt.xlabel("batch")
     plt.ylabel("loss")
     plt.savefig('/content/drive/MyDrive/Connect4_AlphaZero/value loss')
+    plt.close(fig_v)
 
     fig_p, ax_p = plt.subplots()
     ax_p.plot(range(len(policy_loss)), policy_loss, label="policy loss")
@@ -93,7 +95,7 @@ def plot_loss(value_loss, policy_loss):
     plt.xlabel("batch")
     plt.ylabel("loss")
     plt.savefig('/content/drive/MyDrive/Connect4_AlphaZero/policy loss')
-
+    plt.close(fig_p)
 
 def update(brain, vloss, ploss):
     brain.optimizer.zero_grad()
