@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from torch.nn import ReLU,Conv2d,BatchNorm2d
 
 
+
 class Network(nn.Module):
     def __init__(self,number_of_actions,learning_rate=0.001, bias=False, device='cuda'):
         super(Network, self).__init__()
@@ -46,8 +47,8 @@ class Network(nn.Module):
         # other settings
         if self.device == 'cuda':
             self.body.cuda()
-            self.policy.cuda()
             self.value.cuda()
+            self.policy.cuda()
 
         self.optimizer = torch.optim.Adam(self.parameters(),
                                           lr=self.learning_rate,weight_decay=1e-5)

@@ -6,6 +6,7 @@ from state import detection_kernels
 from scipy.signal import convolve2d
 from network import Network
 import torch
+import pickle
 
 
 device='cuda'
@@ -78,6 +79,11 @@ def self_play(brain):
 
 
 def plot_loss(value_loss, policy_loss):
+    with open("/content/drive/MyDrive/Connect4_AlphaZero/value loss", "wb") as fp:
+        pickle.dump(value_loss, fp)
+    with open("/content/drive/MyDrive/Connect4_AlphaZero/policy loss", "wb") as fp:
+        pickle.dump(policy_loss, fp)
+
     plt.clf()
     fig_v, ax_v = plt.subplots()
     ax_v.plot(range(len(value_loss)), value_loss, label="value loss")
@@ -99,9 +105,10 @@ def plot_loss(value_loss, policy_loss):
 
 def update(brain, vloss, ploss):
     brain.optimizer.zero_grad()
-    total_loss=vloss+ploss
-    total_loss.backward()
+    vloss.backward(retain_graph=True)
+    ploss.backward()
     brain.optimizer.step()
+    save_net(brain)
 
 
 def save_net(brain):
