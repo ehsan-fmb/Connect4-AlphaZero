@@ -6,7 +6,7 @@ import torch
 device='cuda'
 
 class MCTS:
-    def __init__(self, root,num_sim,brain,exploration_weight=torch.tensor(1.25).to(device)):
+    def __init__(self, root,num_sim,brain,exploration_weight=torch.tensor(3).to(device)):
         self.__root = root
         self.__exploration_weight = exploration_weight
         self.__sim_budget=num_sim
@@ -71,14 +71,28 @@ class MCTS:
             cur = self.best_child(cur)
         return cur
 
+    def normalize(self,probs):
+        total=sum(probs)
+        if total!=1:
+            probs[0]=probs[0]+1-total
+        return probs
+
     def best_child(self, parent):
         c = self.__exploration_weight
         children = parent.get_children()
+
+        priors=[]
+        for i in range(len(children)):
+            priors.append(children[i].get_prior_policy())
+        noise=np.random.dirichlet(priors)
+        priors=(noise+priors)/2
+        priors=self.normalize(priors)
+
         pos = 0
-        max_val = (children[pos].get_Q() / children[pos].get_N()) + c *children[pos].get_prior_policy()* math.sqrt(
+        max_val = (children[pos].get_Q() / children[pos].get_N()) + c *priors[pos]* math.sqrt(
             parent.get_N() / children[pos].get_N())
         for i in range(1,len(children)):
-            new_val=(children[i].get_Q() / children[i].get_N()) + c*children[i].get_prior_policy() * math.sqrt(
+            new_val=(children[i].get_Q() / children[i].get_N()) + c*priors[i] * math.sqrt(
             parent.get_N() / children[i].get_N())
             if new_val> max_val:
                 pos=i

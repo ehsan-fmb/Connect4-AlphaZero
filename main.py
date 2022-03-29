@@ -18,7 +18,7 @@ ROW_COUNT = 6
 COLUMN_COUNT = 7
 FPLAYER_PIECE = 1
 SPLAYER_PIECE = -1
-Num_Sim_Per_Move = 100
+Num_Sim_Per_Move = 50
 Num_Training_Games = 5000
 batch_size = 10
 
