@@ -1,4 +1,6 @@
 import math
+import sys
+
 from state import State
 import numpy as np
 import torch
@@ -83,7 +85,7 @@ class MCTS:
 
         priors=[]
         for i in range(len(children)):
-            priors.append(children[i].get_prior_policy())
+            priors.append(children[i].get_prior_policy().cpu().detach().numpy())
         noise=np.random.dirichlet(priors)
         priors=(noise+priors)/2
         priors=self.normalize(priors)
