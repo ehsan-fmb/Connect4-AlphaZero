@@ -2,75 +2,86 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import ReLU,Conv2d,BatchNorm2d
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+class ConvBlock(nn.Module):
+    def __init__(self):
+        super(ConvBlock, self).__init__()
+        self.action_size = 7
+        self.conv1 = nn.Conv2d(1, 128, 3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(128)
+
+    def forward(self, s):
+        #s = s.view(-1, 3, 6, 7)  # batch_size x channels x board_x x board_y
+        s = F.relu(self.bn1(self.conv1(s)))
+        return s
+
+class ResBlock(nn.Module):
+    def __init__(self, inplanes=128, planes=128, stride=1, downsample=None):
+        super(ResBlock, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = F.relu(self.bn1(out))
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out += residual
+        out = F.relu(out)
+        return out
+
+
+class OutBlock(nn.Module):
+    def __init__(self):
+        super(OutBlock, self).__init__()
+        self.conv = nn.Conv2d(128, 3, kernel_size=1)  # value head
+        self.bn = nn.BatchNorm2d(3)
+        self.fc1 = nn.Linear(3 * 6 * 7, 32)
+        self.fc2 = nn.Linear(32, 1)
+
+        self.conv1 = nn.Conv2d(128, 32, kernel_size=1)  # policy head
+        self.bn1 = nn.BatchNorm2d(32)
+        self.logsoftmax = nn.LogSoftmax(dim=1)
+        self.fc = nn.Linear(6 * 7 * 32, 7)
+
+    def forward(self, s):
+        v = F.relu(self.bn(self.conv(s)))  # value head
+        v = v.view(-1, 3 * 6 * 7)  # batch_size X channel X height X width
+        v = F.relu(self.fc1(v))
+        v = torch.tanh(self.fc2(v))
+
+        p = F.relu(self.bn1(self.conv1(s)))  # policy head
+        p = p.view(-1, 6 * 7 * 32)
+        p = self.fc(p)
+        p = self.logsoftmax(p).exp()
+        return p,v
 
 
 class Network(nn.Module):
-    def __init__(self,number_of_actions,learning_rate=0.001, bias=False, device='cuda'):
+    def __init__(self,learning_rate=0.004):
         super(Network, self).__init__()
-        # get the inputs
-        self.device = device
-        self.n_outputs = number_of_actions
-        self.learning_rate = learning_rate
-        self.bias = bias
-        self.action_space = np.arange(self.n_outputs)
-        # define body of the network
-        self.body = nn.Sequential(
-            #first conv layer
-            Conv2d(1, 32, kernel_size=4),
-            BatchNorm2d(32),
-            ReLU(),
-            # Second conv layer
-            Conv2d(32, 64, kernel_size=2),
-            BatchNorm2d(64),
-            ReLU(),
-        )
-        # define policy head
-        self.policy = nn.Sequential(
-            nn.Linear(384,
-                      32,
-                      bias=self.bias),
-            nn.ReLU(),
-            nn.Linear(32,
-                      self.n_outputs,
-                      bias=self.bias))
-        # define value head
-        self.value = nn.Sequential(
-            nn.Linear(384,
-                      32,
-                      bias=self.bias),
-            nn.ReLU(),
-            nn.Linear(32,
-                      1,
-                      bias=self.bias))
-        # other settings
-        if self.device == 'cuda':
-            self.body.cuda()
-            self.value.cuda()
-            self.policy.cuda()
-
+        self.conv = ConvBlock()
+        for block in range(10):
+            setattr(self, "res_%i" % block, ResBlock())
+        self.outblock = OutBlock()
         self.optimizer = torch.optim.Adam(self.parameters(),
-                                          lr=self.learning_rate,weight_decay=1e-5)
+                                          lr=learning_rate, weight_decay=1e-8)
 
-    # define functions to get outputs from network
-    def predict(self, state):
-        body_output = torch.flatten(self.get_body_output(state))
-        probs = F.softmax(self.policy(body_output), dim=-1)
-        return probs, self.value(body_output)
-
-    def get_action(self, state):
-        probs = self.predict(state)[0].detach().numpy()
-        action = np.random.choice(self.action_space, p=probs)
-        return action
-
-    def get_log_probs(self, state):
-        body_output = torch.flatten(self.get_body_output(state))
-        logprobs = F.log_softmax(self.policy(body_output), dim=-1)
-        return logprobs
-
-    def get_body_output(self, state):
-        state=np.reshape(state,(1,1,state.shape[0],state.shape[1]))
-        state_t = torch.FloatTensor(state).to(device=self.device)
-        return self.body(state_t)
+    def forward(self, s):
+        s = np.reshape(s, (1, 1, s.shape[0], s.shape[1]))
+        s = torch.FloatTensor(s).to(device=device)
+        s = self.conv(s)
+        for block in range(10):
+            s = getattr(self, "res_%i" % block)(s)
+        s = self.outblock(s)
+        return s
     

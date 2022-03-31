@@ -2,10 +2,8 @@ import copy
 import sys
 import numpy as np
 from scipy.signal import convolve2d
-import torch
 
 
-device='cuda'
 
 # kernels
 horizontal_kernel = np.array([[ 1, 1, 1, 1]])
@@ -16,7 +14,7 @@ detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_ker
 
 
 class State:
-    def __init__(self, parent,isroot,board,cp,prior_policy,arow=None,acul=None,Q=torch.tensor(0).to(device),N=torch.tensor(sys.float_info.epsilon).to(device)):
+    def __init__(self, parent,isroot,board,cp,prior_policy,arow=None,acul=None,Q=0,N=sys.float_info.epsilon):
         self.__parent = parent
         if not isroot:
             self.__board=copy.deepcopy(parent.get_board())
@@ -90,9 +88,9 @@ class State:
             cp=self.__player
         for kernel in detection_kernels:
             result_board = convolve2d(self.__board, kernel, mode="valid")
-            if 4 in result_board*cp.item():
+            if 4 in result_board*cp:
                 return "win"
-            if -4 in result_board*cp.item():
+            if -4 in result_board*cp:
                 return "loss"
 
         if len(np.where(self.__board == 0)[0]) == 0:

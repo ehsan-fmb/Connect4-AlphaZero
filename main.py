@@ -9,7 +9,8 @@ import torch
 import pickle
 
 
-device='cuda'
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 # game logical variables:
 # First player: color=red, number on the borad=1, turn=0, type: search algorithm
@@ -18,9 +19,9 @@ ROW_COUNT = 6
 COLUMN_COUNT = 7
 FPLAYER_PIECE = 1
 SPLAYER_PIECE = -1
-Num_Sim_Per_Move = 50
+Num_Sim_Per_Move = 100
 Num_Training_Games = 5000
-batch_size = 10
+batch_size = 100
 
 
 def end_of_game(board):
@@ -45,9 +46,9 @@ def self_play(brain):
     game_board = np.zeros((ROW_COUNT, COLUMN_COUNT))
     turn = 0
     # instantiate tree and the root details
-    root = State(parent=None, isroot=True, board=game_board, cp=torch.tensor(-1), N=torch.tensor(1),
+    root = State(parent=None, isroot=True, board=game_board, cp=-1, N=1,
                  prior_policy=torch.tensor(0))
-    action_probs, val = brain.predict(root.get_board())
+    action_probs, val = brain(root.get_board())
     root.set_inferences(val, action_probs)
     tree = MCTS(root, Num_Sim_Per_Move, brain)
     # game loop
@@ -115,25 +116,33 @@ def save_net(brain):
     torch.save(brain.state_dict(), "/content/drive/MyDrive/Connect4_AlphaZero/brain.pt")
 
 
-def train():
+def train(load=False):
+    value_buffer = []
+    policy_buffer = []
     counter = 0
-    policy_loss_pl = []
-    value_loss_pl = []
-    value_loss = torch.tensor(0).to(device)
-    policy_loss = torch.tensor(0).to(device)
-    batch_input_num=torch.tensor(0).to(device)
-    brain = Network(number_of_actions=COLUMN_COUNT)
-    while counter < Num_Training_Games:
-        vl, pl,game_input_num= self_play(brain)
 
-        value_loss = value_loss + vl
-        policy_loss = policy_loss + pl
-        batch_input_num=batch_input_num+game_input_num
+    if not load:
+        brain = Network().to(device)
+        policy_loss_pl = []
+        value_loss_pl = []
+    else:
+        with open("/content/drive/MyDrive/Connect4_AlphaZero/value loss", "rb") as fp:
+             value_loss_pl= pickle.load(fp)
+        with open("/content/drive/MyDrive/Connect4_AlphaZero/policy loss", "rb") as fp:
+             policy_loss_pl= pickle.load(fp)
+        brain = Network().to(device)
+        brain.load_state_dict(torch.load("/content/drive/MyDrive/Connect4_AlphaZero/brain.pt"))
+
+    while counter < Num_Training_Games:
+        vl, pl= self_play(brain)
+
+        value_buffer.extend(vl)
+        policy_buffer.extend(pl)
 
         if counter % batch_size == 0 and counter != 0:
 
-            value_loss=value_loss/batch_input_num
-            policy_loss=policy_loss/batch_input_num
+            value_loss=sum(value_buffer)/len(value_buffer)
+            policy_loss=sum(policy_buffer)/len(policy_buffer)
 
             policy_loss_pl.append(policy_loss.item())
             value_loss_pl.append(value_loss.item())
@@ -141,10 +150,9 @@ def train():
 
             update(brain, value_loss, policy_loss)
 
-            value_loss = torch.tensor(0).to(device)
-            policy_loss = torch.tensor(0).to(device)
-            batch_input_num=torch.tensor(0).to(device)
-            print(counter)
+            value_buffer = []
+            policy_buffer = []
+            print("number of played games: "+str(counter))
 
         counter += 1
     save_net(brain)
